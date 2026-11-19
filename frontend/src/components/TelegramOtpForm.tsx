@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { apiPost, saveToken } from "../api";
 
+const TELEGRAM_BOT_USERNAME = import.meta.env.VITE_TELEGRAM_BOT_USERNAME ?? "";
+const botLink = TELEGRAM_BOT_USERNAME ? `https://t.me/${TELEGRAM_BOT_USERNAME}` : null;
+
 export function TelegramOtpForm({ onLoggedIn }: { onLoggedIn: () => void }) {
   const [chatId, setChatId] = useState("");
   const [code, setCode] = useState("");
@@ -33,7 +36,17 @@ export function TelegramOtpForm({ onLoggedIn }: { onLoggedIn: () => void }) {
 
   return (
     <div>
-      <p className="field-hint">Avval botga /start yozing, keyin chat ID'ingizni kiriting.</p>
+      <p className="field-hint">
+        Avval{" "}
+        {botLink ? (
+          <a href={botLink} target="_blank" rel="noopener noreferrer">
+            botga
+          </a>
+        ) : (
+          "botga"
+        )}{" "}
+        /start yozing, keyin chat ID'ingizni kiriting.
+      </p>
       <input
         className="field"
         placeholder="Telegram chat ID"

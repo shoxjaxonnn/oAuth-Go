@@ -30,8 +30,10 @@ func Mount(mux *http.ServeMux) {
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(openAPISpec)
 	})
-	mux.HandleFunc("GET /docs", func(w http.ResponseWriter, r *http.Request) {
+	serveUI := func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html")
 		w.Write([]byte(uiHTML))
-	})
+	}
+	mux.HandleFunc("GET /docs", serveUI)
+	mux.HandleFunc("GET /docs/", serveUI)
 }
