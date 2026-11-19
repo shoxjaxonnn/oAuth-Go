@@ -1,0 +1,157 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "oAuth Demo API (Go)",
+    "version": "1.0.0",
+    "description": "Google, Facebook, Telegram OTP va Firebase email/parol orqali autentifikatsiya. Har bir login access token (15 daqiqa, JSON javobda) va refresh token (30 kun, httpOnly cookie) qaytaradi."
+  },
+  "servers": [{ "url": "http://localhost:4000" }],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": { "type": "http", "scheme": "bearer", "bearerFormat": "JWT" }
+    },
+    "schemas": {
+      "Error": { "type": "object", "properties": { "error": { "type": "string" } } },
+      "Token": { "type": "object", "properties": { "token": { "type": "string" } } }
+    }
+  },
+  "paths": {
+    "/health": {
+      "get": { "summary": "Health check", "responses": { "200": { "description": "OK" } } }
+    },
+    "/auth/google/url": {
+      "get": {
+        "summary": "Get the Google consent-screen URL",
+        "tags": ["Google"],
+        "responses": { "200": { "description": "OAuth URL" } }
+      }
+    },
+    "/auth/google/callback": {
+      "get": {
+        "summary": "Google OAuth redirect callback",
+        "tags": ["Google"],
+        "parameters": [{ "name": "code", "in": "query", "required": true, "schema": { "type": "string" } }],
+        "responses": { "302": { "description": "Redirects to the frontend with an access token" } }
+      }
+    },
+    "/auth/facebook/url": {
+      "get": {
+        "summary": "Get the Facebook consent-screen URL",
+        "tags": ["Facebook"],
+        "responses": { "200": { "description": "OAuth URL" } }
+      }
+    },
+    "/auth/facebook/callback": {
+      "get": {
+        "summary": "Facebook OAuth redirect callback",
+        "tags": ["Facebook"],
+        "parameters": [{ "name": "code", "in": "query", "required": true, "schema": { "type": "string" } }],
+        "responses": { "302": { "description": "Redirects to the frontend with an access token" } }
+      }
+    },
+    "/auth/telegram/send-otp": {
+      "post": {
+        "summary": "Send a 6-digit OTP code to a Telegram chat ID",
+        "tags": ["Telegram"],
+        "requestBody": {
+          "content": { "application/json": { "schema": { "type": "object", "properties": { "chatId": { "type": "string" } } } } }
+        },
+        "responses": {
+          "200": { "description": "Code sent" },
+          "429": { "description": "Rate limited", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/auth/telegram/verify-otp": {
+      "post": {
+        "summary": "Verify the OTP code and log in",
+        "tags": ["Telegram"],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "type": "object", "properties": { "chatId": { "type": "string" }, "code": { "type": "string" } } }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Token", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Token" } } } },
+          "401": { "description": "Wrong code", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/auth/firebase/register": {
+      "post": {
+        "summary": "Register with email/password (sends a verification email)",
+        "tags": ["Firebase"],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "type": "object", "properties": { "email": { "type": "string" }, "password": { "type": "string" } } }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Token", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Token" } } } },
+          "400": { "description": "Error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/auth/firebase/login": {
+      "post": {
+        "summary": "Log in with email/password",
+        "tags": ["Firebase"],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "type": "object", "properties": { "email": { "type": "string" }, "password": { "type": "string" } } }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Token", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Token" } } } },
+          "401": {
+            "description": "Invalid email or password (same message for both cases)",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          }
+        }
+      }
+    },
+    "/auth/firebase/forgot-password": {
+      "post": {
+        "summary": "Send a password-reset link",
+        "tags": ["Firebase"],
+        "requestBody": {
+          "content": { "application/json": { "schema": { "type": "object", "properties": { "email": { "type": "string" } } } } }
+        },
+        "responses": {
+          "200": { "description": "Always the same response, whether or not the email is registered" }
+        }
+      }
+    },
+    "/auth/me": {
+      "get": {
+        "summary": "Current user",
+        "tags": ["Session"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "200": { "description": "User" }, "401": { "description": "Missing/expired token" } }
+      }
+    },
+    "/auth/refresh": {
+      "post": {
+        "summary": "Rotate the refresh cookie for a new access token",
+        "tags": ["Session"],
+        "responses": {
+          "200": { "description": "New token", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Token" } } } },
+          "401": { "description": "Missing/expired/revoked refresh token" }
+        }
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "summary": "Revoke the refresh token and clear the cookie",
+        "tags": ["Session"],
+        "responses": { "200": { "description": "OK" } }
+      }
+    }
+  }
+}
